@@ -1,0 +1,53 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: spring-reactive-product-service-deployment
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: spring-reactive-product-service-deployment
+  template:
+    metadata:
+      labels:
+        app: spring-reactive-product-service-deployment
+    spec:
+      containers:
+        - name: spring-reactive-product-service-deployment
+          env:
+            - name: MONGO_URI
+              valueFrom:
+                configMapKeyRef:
+                  name: products-mongo-config
+                  key: mongo_uri
+          image: vogetisameer12/spring-reactive-product-service:latest
+
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: spring-reactive-product-service
+spec:
+  ports:
+    - name: http
+      targetPort: 8080
+      port: 8080
+  selector:
+    app: spring-reactive-product-service-deployment
+---
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: reactive-product-ingress
+  annotations:
+    kubernetes.io/ingress.class: traefik
+    traefik.frontend.rule.type: PathPrefixStrip
+spec:
+  rules:
+    - host: oam.cluster-01.company.com
+      http:
+        paths:
+          - path: /product
+            backend:
+              serviceName: spring-reactive-product-service
+              servicePort: http
